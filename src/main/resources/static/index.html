@@ -2,57 +2,173 @@
 <html>
 <head>
     <title>ZeroPing</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 </head>
 <body>
 
-<h2>Welcome to ZeroPing:) </h2>
+<!-- Join Screen -->
+<div class="join-screen" id="joinScreen">
+    <div class="container">
+        <h2>Welcome to ZeroPing 💬</h2>
+        <p class="subtitle">Enter your name to join the chat</p>
+        <input type="text" id="nameInput" placeholder="Your Name" maxlength="30"/>
+        <button onclick="joinChat()">Join Chat</button>
+        <p id="joinError" class="error-msg" style="display:none;">Please enter a name to continue.</p>
+    </div>
+</div>
 
-<input type="text" id="sender" placeholder="Your Name"/>
-<br/><br/>
+<!-- Chat Screen -->
+<div class="chat-screen" id="chatScreen" style="display:none;">
+    <div class="container">
+        <div class="chat-header">
+            <h2>ZeroPing 💬</h2>
+            <span id="statusDot" class="status-dot connected" title="Connected"></span>
+        </div>
 
-<input type="text" id="message" placeholder="Type a message"/>
-<button onclick="sendMessage()">Send</button>
+        <ul id="chat"></ul>
 
-<ul id="chat"></ul>
+        <div class="input-row">
+            <input type="text" id="message" placeholder="Type a message..." maxlength="500"/>
+            <button id="sendBtn" onclick="sendMessage()">Send</button>
+        </div>
+        <p id="sendError" class="error-msg" style="display:none;">Message cannot be empty.</p>
+    </div>
+</div>
 
 <script>
     let stompClient = null;
+    let currentUser = null;
+    let connected = false;
+    let reconnectTimer = null;
+
+    // Allow Enter key on name input
+    document.getElementById("nameInput").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") joinChat();
+    });
+
+    function joinChat() {
+        const name = document.getElementById("nameInput").value.trim();
+        if (!name) {
+            document.getElementById("joinError").style.display = "block";
+            return;
+        }
+        currentUser = name;
+        document.getElementById("joinScreen").style.display = "none";
+        document.getElementById("chatScreen").style.display = "flex";
+        loadHistory().then(() => connect());
+    }
+
+    async function loadHistory() {
+        try {
+            const res = await fetch("/history");
+            const messages = await res.json();
+            messages.forEach(msg => showMessage(msg, true));
+        } catch (e) {
+            console.warn("Could not load history", e);
+        }
+    }
 
     function connect() {
+        setStatus(false);
         let socket = new SockJS('/chat');
         stompClient = Stomp.over(socket);
+        stompClient.debug = null; // silence console logs
 
         stompClient.connect({}, function () {
+            connected = true;
+            setStatus(true);
+            clearTimeout(reconnectTimer);
+
             stompClient.subscribe('/topic/public', function (message) {
-                showMessage(JSON.parse(message.body));
+                showMessage(JSON.parse(message.body), false);
             });
+
+            // Announce join
+            stompClient.send("/app/join", {}, JSON.stringify({ sender: currentUser, type: "JOIN" }));
+        }, function () {
+            connected = false;
+            setStatus(false);
+            // Reconnect after 3 seconds
+            reconnectTimer = setTimeout(connect, 3000);
         });
     }
 
+    function setStatus(isConnected) {
+        const dot = document.getElementById("statusDot");
+        if (isConnected) {
+            dot.classList.remove("disconnected");
+            dot.classList.add("connected");
+            dot.title = "Connected";
+        } else {
+            dot.classList.remove("connected");
+            dot.classList.add("disconnected");
+            dot.title = "Reconnecting...";
+        }
+    }
+
     function sendMessage() {
-        let sender = document.getElementById("sender").value;
-        let content = document.getElementById("message").value;
+        const contentEl = document.getElementById("message");
+        const content = contentEl.value.trim();
+        const errEl = document.getElementById("sendError");
+
+        if (!content) {
+            errEl.style.display = "block";
+            setTimeout(() => errEl.style.display = "none", 2000);
+            return;
+        }
+        if (!connected) return;
 
         stompClient.send("/app/sendMessage", {}, JSON.stringify({
-            sender: sender,
+            sender: currentUser,
             content: content,
             type: "CHAT"
         }));
-
-        document.getElementById("message").value = "";
+        contentEl.value = "";
     }
 
-    function showMessage(message) {
-        let chat = document.getElementById("chat");
-        let li = document.createElement("li");
-        li.appendChild(document.createTextNode(message.sender + ": " + message.content));
+    // Send on Enter key
+    document.getElementById("message") && document.addEventListener("keypress", function(e) {
+        if (e.key === "Enter" && document.getElementById("chatScreen").style.display !== "none") {
+            sendMessage();
+        }
+    });
+
+    function showMessage(message, isHistory) {
+        if (!message || !message.type) return;
+        const chat = document.getElementById("chat");
+        const li = document.createElement("li");
+
+        if (message.type === "JOIN" || message.type === "LEAVE") {
+            li.className = "system-msg";
+            li.textContent = message.content;
+        } else {
+            const isOwn = message.sender === currentUser;
+            li.className = "chat-msg " + (isOwn ? "own" : "other");
+            li.innerHTML = `<span class="msg-sender">${escapeHtml(message.sender)}</span>
+                            <span class="msg-content">${escapeHtml(message.content)}</span>
+                            <span class="msg-time">${formatTime(message.timestamp)}</span>`;
+        }
+
+        if (isHistory) li.classList.add("history");
         chat.appendChild(li);
+        chat.scrollTop = chat.scrollHeight;
     }
 
-    connect();
-</script>
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
 
+    function formatTime(timestamp) {
+        if (!timestamp) return "";
+        const d = new Date(timestamp);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+</script>
 </body>
 </html>

@@ -1,0 +1,206 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #eef1f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* ---- Join Screen ---- */
+.join-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.join-screen .container {
+    width: 380px;
+    background: white;
+    padding: 35px 30px;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+    text-align: center;
+}
+
+.join-screen h2 {
+    margin-bottom: 8px;
+    font-size: 22px;
+}
+
+.subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* ---- Chat Screen ---- */
+.chat-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.chat-screen .container {
+    width: 480px;
+    background: white;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ---- Header ---- */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.chat-header h2 {
+    font-size: 20px;
+}
+
+.status-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.connected { background: #4CAF50; }
+.status-dot.disconnected { background: #e53935; }
+
+/* ---- Inputs ---- */
+input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    margin-bottom: 10px;
+    outline: none;
+    transition: border 0.2s;
+}
+
+input:focus {
+    border-color: #4CAF50;
+}
+
+button {
+    padding: 10px 18px;
+    background: #4CAF50;
+    border: none;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+button:hover { background: #43a047; }
+
+.join-screen button {
+    width: 100%;
+    padding: 11px;
+    font-size: 15px;
+}
+
+/* ---- Message input row ---- */
+.input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-row input {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* ---- Chat list ---- */
+ul {
+    list-style: none;
+    padding: 0;
+    max-height: 340px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ---- Message bubbles ---- */
+li.chat-msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+li.chat-msg.own {
+    align-self: flex-end;
+    background: #dcf8c6;
+    border-bottom-right-radius: 2px;
+}
+
+li.chat-msg.other {
+    align-self: flex-start;
+    background: #f1f1f1;
+    border-bottom-left-radius: 2px;
+}
+
+.msg-sender {
+    font-size: 11px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 2px;
+}
+
+li.own .msg-sender { color: #388e3c; }
+
+.msg-content { word-break: break-word; }
+
+.msg-time {
+    font-size: 10px;
+    color: #aaa;
+    align-self: flex-end;
+    margin-top: 3px;
+}
+
+/* ---- System messages ---- */
+li.system-msg {
+    align-self: center;
+    background: transparent;
+    color: #999;
+    font-size: 12px;
+    font-style: italic;
+    padding: 2px 0;
+}
+
+/* ---- History messages ---- */
+li.history {
+    opacity: 0.75;
+}
+
+/* ---- Error messages ---- */
+.error-msg {
+    color: #e53935;
+    font-size: 12px;
+    margin-top: -6px;
+}
